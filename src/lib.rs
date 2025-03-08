@@ -44,6 +44,11 @@ impl CPU {
                 self.a = value;
                 self.update_zero_and_negative_flags(self.a);
             }
+            0x4C => {
+                let low = self.memory[self.pc as usize] as u16;
+                let high = self.memory[self.pc as usize + 1] as u16;
+                self.pc = (high << 8) | low;
+            }
             _ => {
                 println!("Unsupported opcode: {:#02x}", opcode);
             }
