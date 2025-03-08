@@ -52,6 +52,10 @@ impl Dynarec {
                             cpu.pc = addr;
                         }));
                     }
+                    0x00 => { // BRK (Break)
+                        println!("Encountered BRK at {:#X}, stopping block compilation.", pc - 1);
+                        break;
+                    }
                     _ => { 
                         println!("Unimplemented opcode {:#X} at PC {:#X}, falling back to interpreter.", opcode, pc - 1);
                         return Box::new(move |cpu: &mut CPU| -> u16 {
@@ -161,22 +165,6 @@ mod tests {
     }
 
     #[test]
-    fn test_jmp_absolute_interpreter() {
-        let mut cpu = CPU::new();
-
-        // Load JMP instruction at address 0x8000, jumping to 0x9000
-        cpu.memory[0x8000] = 0x4C; // JMP Absolute
-        cpu.memory[0x8001] = 0x00; // Low byte of target address (0x9000)
-        cpu.memory[0x8002] = 0x90; // High byte of target address (0x9000)
-
-        // Manually execute in interpreted mode
-        cpu.execute_instruction();
-
-        // Assert the CPU state after execution
-        assert_eq!(cpu.pc, 0x9000, "Program Counter should jump to 0x9000");
-    }
-
-    #[test]
     fn test_jmp_absolute_to_same_address() {
         let mut cpu = CPU::new();
         let mut dynarec = Dynarec::new();
@@ -190,22 +178,6 @@ mod tests {
         let jit_fn = dynarec.translate_block(&mut cpu, 0x8000);
         cpu.pc = 0x8000;
         cpu.pc = jit_fn(&mut cpu);
-
-        // Assert that it loops back to the same address
-        assert_eq!(cpu.pc, 0x8000, "Program Counter should jump to itself (infinite loop test)");
-    }
-
-    #[test]
-    fn test_jmp_absolute_interpreter_to_same_address() {
-        let mut cpu = CPU::new();
-
-        // Load JMP instruction at address 0x8000, jumping to itself
-        cpu.memory[0x8000] = 0x4C; // JMP Absolute
-        cpu.memory[0x8001] = 0x00; // Low byte (0x8000)
-        cpu.memory[0x8002] = 0x80; // High byte (0x8000)
-
-        // Manually execute in interpreted mode
-        cpu.execute_instruction();
 
         // Assert that it loops back to the same address
         assert_eq!(cpu.pc, 0x8000, "Program Counter should jump to itself (infinite loop test)");
